@@ -1,0 +1,20 @@
+# Virtual environment
+venv/
+
+# SQLite database
+backend/bi_tool.db
+
+# __pycache__ folders
+__pycache__/
+*/__pycache__/
+*.*/__pycache__/
+
+# Other common files to ignore
+.DS_Store
+*.log
+*.pyc
+*.pyo
+*.bak
+*.swp
+*~
+*.sqlite

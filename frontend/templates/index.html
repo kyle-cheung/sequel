@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/style.css">
+    <title>BI Tool</title>
+</head>
+<body>
+    <form id="upload-container">
+        <input type="file" name="file" accept=".csv">
+        <input type="text" name="table_name" placeholder="Table Name">
+        <button type="submit">Upload</button>
+        <button type="button" id="clear-message">Clear</button>
+    </form>
+    <div class="tables-container-box">
+        <h3>Tables</h3>
+        <div id="tables-container"></div>
+    </div>
+    <div id="message-container"></div>
+    <script src="/static/scripts.js"></script>
+</body>
+</html>
