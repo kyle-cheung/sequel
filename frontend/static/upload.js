@@ -1,4 +1,9 @@
-document.addEventListener("DOMContentLoaded", () => {
+import { fetchTables } from "./tables.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const tableListContainer = document.getElementById("tableList");
+    await fetchTables(tableListContainer);
+    
     const uploadButton = document.getElementById("uploadButton");
     uploadButton.addEventListener("click", async () => {
         const csvFileInput = document.getElementById("csvFile");
@@ -29,10 +34,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const table = createTableFromData(sampleData);
             sampleDataDiv.innerHTML = "";
             sampleDataDiv.appendChild(table);
+            fetchTables(document.getElementById("tableList"));
         } else if (result.status === "exists") {
             const messageDiv = document.getElementById("message");
             messageDiv.textContent = result.message;
         }
+        
     });
 
     const clearButton = document.getElementById("clearButton");

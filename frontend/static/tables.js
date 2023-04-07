@@ -1,9 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const tableListContainer = document.getElementById("tableList");
-    fetchTables(tableListContainer);
-});
-
-async function fetchTables(container) {
+export async function fetchTables(container) {
     //Clear the container before adding a new table
     container.innerHTML = "";
 

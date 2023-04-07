@@ -27,6 +27,7 @@ app.py
 from flask import Flask, request, jsonify, render_template
 import os
 import database
+import re
 
 static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static'))
 
@@ -40,6 +41,10 @@ def index():
 def upload_csv():
     file = request.files["file"]
     table_name = request.form["table_name"]
+    
+    if not table_name or not re.match("^[a-zA-Z_][a-zA-Z0-9_]*$", table_name):
+        return jsonify({"status": "error", "message": "Invalid table name"})
+        
     sample_data = database.save_csv_to_db(file, table_name)
     return jsonify({"status": "success", "message": f"CSV file uploaded successfully as {table_name}", "sample_data": sample_data})
 
@@ -64,6 +69,7 @@ def delete_table():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 ```
 
 database.py:
@@ -92,21 +98,24 @@ def get_tables():
 def delete_table(table_name):
     with sqlite3.connect(DATABASE_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute(f"DROP TABLE IF EXISTS {table_name};")
+        cursor.execute("DROP TABLE IF EXISTS ?;", (table_name,))
     return "success"
 ```
 
 index.html:
 ```
+{% from flask import url_for %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sequel</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <script src="/static/upload.js" defer></script>
-    <script src="/static/tables.js" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='upload.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='tables.js') }}" defer></script>
+
 </head>
 <body>
     <div class="container">
@@ -166,6 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const messageDiv = document.getElementById("message");
             messageDiv.textContent = result.message;
         }
+        
     });
 
     const clearButton = document.getElementById("clearButton");
@@ -272,9 +282,9 @@ async function deleteTable(tableName) {
     });
 
     const result = await response.json();
-    if (result.status !== "success") {
+    if (result.status === "error") {
         alert("An error occurred while deleting the table.");
-    }
+    }    
 }
 ```
 
