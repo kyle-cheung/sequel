@@ -49,48 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         messageDiv.textContent = "";
         sampleDataDiv.textContent = "";
     });
-
-    // Listen for query send button
-    const sendButton = document.getElementById("sendButton");
-    sendButton.addEventListener("click", async () => {
-        const userQueryInput = document.getElementById("userQuery");
-        const userQuery = userQueryInput.value;
-
-        const response = await fetch("/store_user_query", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: `user_query=${encodeURIComponent(userQuery)}`,
-        });
-
-        const result = await response.json();
-        if (result.status === "success") {
-            // Handle the response here (e.g., show a message or clear the input)
-            //Clear the input
-            userQueryInput.value = "";
-            updateQueryHistory(userQuery);
-        } else {
-            // Handle the error here (e.g., show an error message)
-        }
-    });
-
-    // Add this code to capture the "Enter" key press in the userQuery input
-    document.getElementById("userQuery").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            sendButton.click();
-        }
-    });
-
 });
-
-function updateQueryHistory(query) {
-    const queryHistory = document.getElementById("queryHistory");
-    const queryElement = document.createElement("p");
-    queryElement.textContent = query;
-    queryHistory.appendChild(queryElement);
-}
 
 function createTableFromData(data) {
     const table = document.createElement("table");
