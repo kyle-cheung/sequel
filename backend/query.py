@@ -9,9 +9,10 @@ textcortex_api_key = 'Bearer gAAAAABkMFEMlesLUwl9Uy6K4zZYUxtxsazlYOpSKP1_HASvA5E
 textcortex_sql_generator_endpoint = "https://api.textcortex.com/v1/codes"
 
 def store_user_query(query):
-    response, sql_response, sql_results = generate_sql_query(query)
+    response, sql_response, sql_results, status = generate_sql_query(query)
     print(sql_results)
     return {
+        "status" : status,
         "sql_query" : sql_response,
         "sql_results": sql_results
     }
@@ -25,7 +26,7 @@ def construct_textcortex_api_data(question):
         "model": "icortex-1",
         "n": 1,
         "temperature": 0,
-        "text": "SQL Table Structure: " + str(table_structure) + " Question: " + question + " SQL Query: "
+        "text": "SQLite Table Structure: " + str(table_structure) + " Question: " + question + " SQL Query: "
     }
     headers = {
         "Content-Type": "application/json",
@@ -55,11 +56,19 @@ def generate_sql_query(question):
     else:
         print("Oops, that didn't work. Can you rephrase your question?", response.text)
     # Close connection
-    return response, sql_query, sql_results
+    return response, sql_query, sql_results, "error" if response.status_code != 200 else "success"
 
 def query_database(sql_query):
-    with sqlite3.connect(sequel_db) as conn:
-        # Fetch the results using pandas
-        df = pd.read_sql_query(sql_query, conn)
+    try:
+        with sqlite3.connect(sequel_db) as conn:
+            # Fetch the results using pandas
+            df = pd.read_sql_query(sql_query, conn)
 
-        return df.to_dict('records')
+            return df.to_dict('records')
+
+    except Exception as e:
+        print("Error while executing SQL query: ", e)
+        return {
+            "status": "error",
+            "message" :str(e)
+        }

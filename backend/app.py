@@ -46,7 +46,7 @@ def store_user_query():
     user_query = request.form["user_query"]
     query_response = query.store_user_query(user_query)
     query_response["sql_results"] = json.dumps(query_response["sql_results"])
-    return jsonify({"status": "success", "message": query_response})
+    return jsonify({"status": query_response["status"], "message": query_response})
 
 if __name__ == "__main__":
     app.run(debug=True)
