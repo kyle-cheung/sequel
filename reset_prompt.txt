@@ -3,7 +3,7 @@ Goal:
 At a high level my goal is: create a tool that accepts text input to query a database.
 This can be achieved by a few milestones
 1. Establish a connection to a database: let's work on this part first, and this is achieved by accepting, uploading, processing, and displaying the CSV uploads that represent tables in a database
-2. Have a text input
+2. Have a text input and response from the app
 3. Send the text input and relevant schema information via API to OpenAI GPT3 to then create the SQL query which we will pass to the database
 
 We just accomplished most of 1.
@@ -126,11 +126,11 @@ index.html:
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script type="module" src="{{ url_for('static', filename='upload.js') }}" defer></script>
     <script type="module" src="{{ url_for('static', filename='tables.js') }}" defer></script>
-
+    <script type="module" src="{{ url_for('static', filename='query.js') }}" defer></script>
 </head>
 <body>
     <div class="container">
-        <div class="content">
+        <div class="uploadContent">
             <h1>Sequel</h1> 
                 <div class="input-container">
                     <input type="file" id="csvFile">
@@ -141,9 +141,10 @@ index.html:
                     </div>
                 </div>
         </div>
+        <div id="tableList"></div>
         <div id="message"></div>
         <div id="sampleData"></div>
-        <div id="tableList"></div>
+        
     </div>
 
     <div class="query-history" id="queryHistory"></div>
@@ -209,48 +210,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         messageDiv.textContent = "";
         sampleDataDiv.textContent = "";
     });
-
-    // Listen for query send button
-    const sendButton = document.getElementById("sendButton");
-    sendButton.addEventListener("click", async () => {
-        const userQueryInput = document.getElementById("userQuery");
-        const userQuery = userQueryInput.value;
-
-        const response = await fetch("/store_user_query", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: `user_query=${encodeURIComponent(userQuery)}`,
-        });
-
-        const result = await response.json();
-        if (result.status === "success") {
-            // Handle the response here (e.g., show a message or clear the input)
-            //Clear the input
-            userQueryInput.value = "";
-            updateQueryHistory(userQuery);
-        } else {
-            // Handle the error here (e.g., show an error message)
-        }
-    });
-
-    // Add this code to capture the "Enter" key press in the userQuery input
-    document.getElementById("userQuery").addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
-            event.preventDefault();
-            sendButton.click();
-        }
-    });
-
 });
-
-function updateQueryHistory(query) {
-    const queryHistoryDiv = document.getElementById("queryHistory");
-    const queryElement = document.createElement("p");
-    queryElement.textContent = query;
-    queryHistoryDiv.prepend(queryElement);
-}
 
 function createTableFromData(data) {
     const table = document.createElement("table");
@@ -450,6 +410,72 @@ form {
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
     overflow-y: scroll;
     max-height: 200px;
+}
+```
+
+query.js:
+```
+export async function fetchTables(container) {
+    //Clear the container before adding a new table
+    container.innerHTML = "";
+
+    const response = await fetch("/tables");
+    const result = await response.json();
+    const tableNames = result.tables;
+
+    const table = createTableFromTableNames(tableNames);
+    container.appendChild(table);
+}
+
+function createTableFromTableNames(tableNames) {
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const tbody = document.createElement("tbody");
+
+    const headerRow = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = "Table Name";
+    headerRow.appendChild(th);
+    thead.appendChild(headerRow);
+
+    tableNames.forEach((tableName) => {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.textContent = tableName;
+        tr.appendChild(td);
+
+        // Create a delete button for each table.
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", async () => {
+            if (confirm(`Are you sure you want to delete ${tableName}?`)) {
+                await deleteTable(tableName);
+                fetchTables(document.getElementById("tableList"));
+            }
+        });
+
+        // Add the delete button to the row.
+        const buttonTd = document.createElement("td");
+        buttonTd.appendChild(deleteButton);
+        tr.appendChild(buttonTd);
+
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    return table;
+}
+
+async function deleteTable(tableName) {
+    const response = await fetch(`/delete_table?table_name=${tableName}`, {
+        method: "DELETE",
+    });
+
+    const result = await response.json();
+    if (result.status === "error") {
+        alert("An error occurred while deleting the table.");
+    }    
 }
 ```
 

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, json
 import os
 import database
 import re
@@ -44,8 +44,9 @@ def delete_table():
 @app.route("/store_user_query", methods=["POST"])
 def store_user_query():
     user_query = request.form["user_query"]
-    query.store_user_query(user_query)
-    return jsonify({"status": "success", "message": "User query stored successfully"})
+    query_response = query.store_user_query(user_query)
+    query_response["sql_results"] = json.dumps(query_response["sql_results"])
+    return jsonify({"status": "success", "message": query_response})
 
 if __name__ == "__main__":
     app.run(debug=True)

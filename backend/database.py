@@ -34,3 +34,20 @@ def delete_table(table_name):
         else:
             return "not found"
 
+def fetch_all_table_structure():
+    """
+    This function fetches all of the tables structure of the database and returns as a dictionary
+    Note that this only works for SQLite
+    :return:
+    """
+
+
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        table_structure = {}
+        for table in tables:
+            cursor.execute(f"PRAGMA table_info({table[0]})")
+            table_structure[table[0]] = cursor.fetchall()
+        return table_structure
