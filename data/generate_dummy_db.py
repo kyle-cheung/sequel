@@ -19,10 +19,10 @@ c.execute('''CREATE TABLE IF NOT EXISTS sales
 
 # Create sales person table
 c.execute('''CREATE TABLE IF NOT EXISTS sales_person
-                (id INTEGER PRIMARY KEY, name TEXT)''')
+                (id INTEGER PRIMARY KEY, name TEXT, region TEXT)''')
 
 # Generate and insert dummy customer data
-for i in range(100):
+for i in range(1000):
     # Generate random real names using Faker
     first_name = fake.first_name()
     name = f'{first_name} {fake.last_name()}'
@@ -30,18 +30,19 @@ for i in range(100):
     phone = f'+1{random.randint(100, 999)}{random.randint(100, 999)}{random.randint(1000, 9999)}'
     c.execute(f"INSERT INTO customers VALUES ({i+1}, '{name}', '{email}', '{phone}')")
     
-    bike = random.choice(['Road Bike', 'Mountain Bike', 'Hybrid Bike', 'Electric Bike'])
+    bike = random.choice(['Road Bike', 'Mountain Bike', 'Hybrid Bike', 'Electric Bike', 'Child Bike'])
     sale_date = datetime.now() - timedelta(days=random.randint(1, 365))
     price = random.randint(100, 5000)
     customer_id = random.randint(1,100)
     sales_person = random.randint(1,12)
     c.execute(f"INSERT INTO sales VALUES ({i+1}, {customer_id}, '{bike}', '{sale_date.date()}', {price}, {sales_person})")
 
-for i in range(12):
+for i in range(34):
     # Generate random real names using Faker
     first_name = fake.first_name()
     name = f'{first_name} {fake.last_name()}'
-    c.execute(f"INSERT INTO sales_person VALUES ({i+1}, '{name}')")
+    region = random.choice(['North', 'East', 'South', 'West'])
+    c.execute(f"INSERT INTO sales_person VALUES ({i+1}, '{name}', '{region}')")
 
 # Commit changes and close connection
 conn.commit()

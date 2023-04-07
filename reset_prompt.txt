@@ -21,11 +21,12 @@ sequel/
 |   |   |-- styles.css
 |   |   |-- upload.js
 |   |   |-- tables.js
+|   |   |-- query.js
 
 Code:
 app.py
 ```
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, json
 import os
 import database
 import re
@@ -71,8 +72,9 @@ def delete_table():
 @app.route("/store_user_query", methods=["POST"])
 def store_user_query():
     user_query = request.form["user_query"]
-    query.store_user_query(user_query)
-    return jsonify({"status": "success", "message": "User query stored successfully"})
+    query_response = query.store_user_query(user_query)
+    query_response["sql_results"] = json.dumps(query_response["sql_results"])
+    return jsonify({"status": "success", "message": query_response})
 
 if __name__ == "__main__":
     app.run(debug=True)
@@ -104,15 +106,104 @@ def get_tables():
 def delete_table(table_name):
     with sqlite3.connect(DATABASE_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS ?;", (table_name,))
-    return "success"
+
+        # Check if the table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        result = cursor.fetchone()
+
+        if result:
+            # If the table exists, delete it
+            cursor.execute(f"DROP TABLE {table_name}")
+            return "success"
+        else:
+            return "not found"
+
+def fetch_all_table_structure():
+    """
+    This function fetches all of the tables structure of the database and returns as a dictionary
+    Note that this only works for SQLite
+    :return:
+    """
+
+
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+        table_structure = {}
+        for table in tables:
+            cursor.execute(f"PRAGMA table_info({table[0]})")
+            table_structure[table[0]] = cursor.fetchall()
+        return table_structure
 ```
 
 query.py:
 ```
+import sqlite3
+import pandas as pd
+import requests
+import database
+from database import fetch_all_table_structure
+
+sequel_db = 'bi_tool.db'
+textcortex_api_key = 'Bearer gAAAAABkMFEMlesLUwl9Uy6K4zZYUxtxsazlYOpSKP1_HASvA5EuoI0e2Xsd6o5EtWLXayMR_Rrqa1nT612wCsesvWb-gMf_U865T9HXIMuPf5RGmsfJBnRaEQTq5jaktjDO50tBVvRy'
+textcortex_sql_generator_endpoint = "https://api.textcortex.com/v1/codes"
+
 def store_user_query(query):
-    # You can store and process the user query here
-    pass
+    response, sql_response, sql_results = generate_sql_query(query)
+    print(sql_results)
+    return {
+        "sql_query" : sql_response,
+        "sql_results": sql_results
+    }
+
+
+def construct_textcortex_api_data(question):
+    table_structure = database.fetch_all_table_structure()
+    payload = {
+        "max_tokens": 1024,
+        "mode": "python",
+        "model": "icortex-1",
+        "n": 1,
+        "temperature": 0,
+        "text": "SQL Table Structure: " + str(table_structure) + " Question: " + question + " SQL Query: "
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": textcortex_api_key
+    }
+
+    return payload, headers
+
+def generate_sql_query(question):
+    """
+    This function generates the SQL query by making a POST request to TextCortex API with
+     the user question and the table structure
+    :param question: user question
+    :param table_structure: table structure of the database
+    :return: SQL query
+    """
+    
+    payload, headers = construct_textcortex_api_data(question)
+    sql_query = ""
+
+    response = requests.request("POST", textcortex_sql_generator_endpoint, json=payload, headers=headers)
+    if response.status_code == 200:
+        # Execute SQL query and display results
+        sql_query = response.json()['data']['outputs'][0]['text']
+        print(f"Generated SQL query: {sql_query}")
+        sql_results = query_database(sql_query)
+    else:
+        print("Oops, that didn't work. Can you rephrase your question?", response.text)
+    # Close connection
+    return response, sql_query, sql_results
+
+def query_database(sql_query):
+    with sqlite3.connect(sequel_db) as conn:
+        # Fetch the results using pandas
+        df = pd.read_sql_query(sql_query, conn)
+
+        return df.to_dict('records')
 ```
 
 index.html:
@@ -408,74 +499,109 @@ form {
     background-color: white;
     padding: 20px;
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
-    overflow-y: scroll;
-    max-height: 200px;
+    overflow-y: auto;
+    max-height: 800px;
+}
+
+.sequelResponse {
+    text-align: right;
 }
 ```
 
 query.js:
 ```
-export async function fetchTables(container) {
-    //Clear the container before adding a new table
-    container.innerHTML = "";
+// Listen for query send button
+const sendButton = document.getElementById("sendButton");
+sendButton.addEventListener("click", async () => {
+    const userQueryInput = document.getElementById("userQuery");
+    const userQuery = userQueryInput.value;
 
-    const response = await fetch("/tables");
+    //Clear the input
+    userQueryInput.value = "";
+    //Add user input to query history
+    updateQueryHistory(userQuery);
+
+    const response = await fetch("/store_user_query", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `user_query=${encodeURIComponent(userQuery)}`,
+    });
+    
     const result = await response.json();
-    const tableNames = result.tables;
+    if (result.status === "success") {
+        //Add response from app to query history
+        const sqlResults = JSON.parse(result.message.sql_results);
+        updateQueryHistory(`SQL Query: ${result.message.sql_query}`, true, sqlResults);
+    } else {
+        // Handle the error here (e.g., show an error message)
+        updateQueryHistory("There was an error with your query", true)
+    }
+    // Scroll to the bottom of the queryHistory container
+    scrollToBottom(queryHistory);
+});
 
-    const table = createTableFromTableNames(tableNames);
-    container.appendChild(table);
-}
+// Capture the "Enter" key press in the userQuery input
+document.getElementById("userQuery").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        sendButton.click();
+    }
+});
 
-function createTableFromTableNames(tableNames) {
-    const table = document.createElement("table");
-    const thead = document.createElement("thead");
-    const tbody = document.createElement("tbody");
 
-    const headerRow = document.createElement("tr");
-    const th = document.createElement("th");
-    th.textContent = "Table Name";
-    headerRow.appendChild(th);
-    thead.appendChild(headerRow);
+function updateQueryHistory(query, sequel_response = false, results = null) {
+    const queryHistory = document.getElementById("queryHistory");
+    const queryElement = document.createElement("p");
+    const separator = document.createElement("hr");
+    queryElement.textContent = query;
 
-    tableNames.forEach((tableName) => {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.textContent = tableName;
-        tr.appendChild(td);
+    if (sequel_response) {
+        queryElement.classList.add("sequelResponse");
+        const separator = document.createElement("hr");
+        queryHistory.appendChild(separator);
+    }
 
-        // Create a delete button for each table.
-        const deleteButton = document.createElement("button");
-        deleteButton.textContent = "Delete";
-        deleteButton.addEventListener("click", async () => {
-            if (confirm(`Are you sure you want to delete ${tableName}?`)) {
-                await deleteTable(tableName);
-                fetchTables(document.getElementById("tableList"));
-            }
+    queryHistory.appendChild(queryElement);
+    // Scroll to the bottom of the queryHistory container
+    scrollToBottom(queryHistory);
+
+    if (results) {
+        const resultsTable = document.createElement("table");
+        const thead = document.createElement("thead");
+        const tbody = document.createElement("tbody");
+
+        // Create table header
+
+        const headerRow = document.createElement("tr");
+        Object.keys(results[0]).forEach((key) => {
+            const th = document.createElement("th");
+            th.textContent = key;
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        // Create table body
+        results.forEach((row) => {
+            const tr = document.createElement("tr");
+            Object.values(row).forEach((value) => {
+                const td = document.createElement("td");
+                td.textContent = value;
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
         });
 
-        // Add the delete button to the row.
-        const buttonTd = document.createElement("td");
-        buttonTd.appendChild(deleteButton);
-        tr.appendChild(buttonTd);
-
-        tbody.appendChild(tr);
-    });
-
-    table.appendChild(thead);
-    table.appendChild(tbody);
-    return table;
+        resultsTable.appendChild(thead);
+        resultsTable.appendChild(tbody);
+        queryHistory.appendChild(resultsTable);
+        queryHistory.appendChild(separator);
+    }
 }
 
-async function deleteTable(tableName) {
-    const response = await fetch(`/delete_table?table_name=${tableName}`, {
-        method: "DELETE",
-    });
-
-    const result = await response.json();
-    if (result.status === "error") {
-        alert("An error occurred while deleting the table.");
-    }    
+function scrollToBottom(element) {
+    element.scrollTop = element.scrollHeight;
 }
 ```
 
