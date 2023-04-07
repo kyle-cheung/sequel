@@ -104,8 +104,6 @@ def delete_table(table_name):
 
 index.html:
 ```
-{% from flask import url_for %}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -113,8 +111,8 @@ index.html:
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sequel</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <script src="{{ url_for('static', filename='upload.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='tables.js') }}" defer></script>
+    <script type="module" src="{{ url_for('static', filename='upload.js') }}" defer></script>
+    <script type="module" src="{{ url_for('static', filename='tables.js') }}" defer></script>
 
 </head>
 <body>
@@ -136,11 +134,17 @@ index.html:
     </div>
 </body>
 </html>
+
 ```
 
 upload.js
 ```
-document.addEventListener("DOMContentLoaded", () => {
+import { fetchTables } from "./tables.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const tableListContainer = document.getElementById("tableList");
+    await fetchTables(tableListContainer);
+    
     const uploadButton = document.getElementById("uploadButton");
     uploadButton.addEventListener("click", async () => {
         const csvFileInput = document.getElementById("csvFile");
@@ -171,6 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const table = createTableFromData(sampleData);
             sampleDataDiv.innerHTML = "";
             sampleDataDiv.appendChild(table);
+            fetchTables(document.getElementById("tableList"));
         } else if (result.status === "exists") {
             const messageDiv = document.getElementById("message");
             messageDiv.textContent = result.message;
@@ -219,12 +224,7 @@ function createTableFromData(data) {
 
 tables.js:
 ```
-document.addEventListener("DOMContentLoaded", () => {
-    const tableListContainer = document.getElementById("tableList");
-    fetchTables(tableListContainer);
-});
-
-async function fetchTables(container) {
+export async function fetchTables(container) {
     //Clear the container before adding a new table
     container.innerHTML = "";
 
