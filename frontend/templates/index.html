@@ -2,23 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/style.css">
-    <title>BI Tool</title>
+    <title>Sequel</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/upload.js" defer></script>
+    <script src="/static/tables.js" defer></script>
 </head>
 <body>
-    <form id="upload-container">
-        <input type="file" name="file" accept=".csv">
-        <input type="text" name="table_name" placeholder="Table Name">
-        <button type="submit">Upload</button>
-        <button type="button" id="clear-message">Clear</button>
-    </form>
-    <div class="tables-container-box">
-        <h3>Tables</h3>
-        <div id="tables-container"></div>
+    <div class="container">
+        <div class="content">
+            <h1>Sequel</h1> 
+                <div class="input-container">
+                    <input type="file" id="csvFile">
+                    <div>
+                        <input type="text" id="tableName" placeholder="Table name">
+                        <button id="uploadButton">Upload</button>
+                        <button id="clearButton">Clear</button>
+                    </div>
+                </div>
+        </div>
+        <div id="message"></div>
+        <div id="sampleData"></div>
+        <div id="tableList"></div>
     </div>
-    <div id="message-container"></div>
-    <script src="/static/scripts.js"></script>
 </body>
 </html>
