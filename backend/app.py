@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import os
 import database
 import re
+import query
 
 static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static'))
 
@@ -40,6 +41,11 @@ def delete_table():
     else:
         return jsonify({"status": "error", "message": "No table name provided"})
 
+@app.route("/store_user_query", methods=["POST"])
+def store_user_query():
+    user_query = request.form["user_query"]
+    query.store_user_query(user_query)
+    return jsonify({"status": "success", "message": "User query stored successfully"})
 
 if __name__ == "__main__":
     app.run(debug=True)
