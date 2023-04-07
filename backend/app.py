@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import os
 import database
+import re
 
 static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static'))
 
@@ -14,6 +15,10 @@ def index():
 def upload_csv():
     file = request.files["file"]
     table_name = request.form["table_name"]
+    
+    if not table_name or not re.match("^[a-zA-Z_][a-zA-Z0-9_]*$", table_name):
+        return jsonify({"status": "error", "message": "Invalid table name"})
+        
     sample_data = database.save_csv_to_db(file, table_name)
     return jsonify({"status": "success", "message": f"CSV file uploaded successfully as {table_name}", "sample_data": sample_data})
 

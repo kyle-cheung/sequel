@@ -1,0 +1,326 @@
+Everything is working as expected. This time around, we made a great team! Let me refresh your memory with our goal, the current project directory, and our code>
+Goal:
+At a high level my goal is: create a tool that accepts text input to query a database.
+This can be achieved by a few milestones
+1. Establish a connection to a database: let's work on this part first, and this is achieved by accepting, uploading, processing, and displaying the CSV uploads that represent tables in a database
+2. Have a text input
+3. Send the text input and relevant schema information via API to OpenAI GPT3 to then create the SQL query which we will pass to the database
+
+We just accomplished most of 1.
+
+Project directory:
+sequel/
+|-- backend/
+|   |-- app.py
+|   |-- database.py
+|-- frontend/
+|   |-- templates/
+|   |   |-- index.html
+|   |-- static/
+|   |   |-- styles.css
+|   |   |-- upload.js
+|   |   |-- tables.js
+
+Code:
+app.py
+```
+from flask import Flask, request, jsonify, render_template
+import os
+import database
+
+static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static'))
+
+app = Flask(__name__, template_folder='../frontend/templates', static_url_path='/static', static_folder=static_path)
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html")
+
+@app.route("/upload_csv", methods=["POST"])
+def upload_csv():
+    file = request.files["file"]
+    table_name = request.form["table_name"]
+    sample_data = database.save_csv_to_db(file, table_name)
+    return jsonify({"status": "success", "message": f"CSV file uploaded successfully as {table_name}", "sample_data": sample_data})
+
+@app.route("/tables", methods=["GET"])
+def get_tables():
+    table_names = database.get_tables()
+    return jsonify({"tables": table_names})
+
+@app.route("/delete_table", methods=["DELETE"])
+def delete_table():
+    table_name = request.args.get("table_name")
+    if table_name:
+        try:
+            database.delete_table(table_name)
+            return jsonify({"status": "success", "message": f"Table {table_name} deleted successfully"})
+        except Exception as e:
+            print(e)
+            return jsonify({"status": "error", "message": "An error occurred while deleting the table"})
+    else:
+        return jsonify({"status": "error", "message": "No table name provided"})
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
+```
+
+database.py:
+```
+import sqlite3
+import pandas as pd
+
+DATABASE_FILE = "bi_tool.db"
+
+def save_csv_to_db(file, table_name):
+    df = pd.read_csv(file)
+
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        df.to_sql(table_name, conn, if_exists="replace", index=False)
+
+    sample_data = df.head(5).to_json(orient="records")
+    return sample_data
+
+def get_tables():
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [row[0] for row in cursor.fetchall()]
+    return tables
+
+def delete_table(table_name):
+    with sqlite3.connect(DATABASE_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"DROP TABLE IF EXISTS {table_name};")
+    return "success"
+```
+
+index.html:
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sequel</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/upload.js" defer></script>
+    <script src="/static/tables.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <div class="content">
+            <h1>Sequel</h1> 
+                <div class="input-container">
+                    <input type="file" id="csvFile">
+                    <div>
+                        <input type="text" id="tableName" placeholder="Table name">
+                        <button id="uploadButton">Upload</button>
+                        <button id="clearButton">Clear</button>
+                    </div>
+                </div>
+        </div>
+        <div id="message"></div>
+        <div id="sampleData"></div>
+        <div id="tableList"></div>
+    </div>
+</body>
+</html>
+```
+
+upload.js
+```
+document.addEventListener("DOMContentLoaded", () => {
+    const uploadButton = document.getElementById("uploadButton");
+    uploadButton.addEventListener("click", async () => {
+        const csvFileInput = document.getElementById("csvFile");
+        const tableNameInput = document.getElementById("tableName");
+        const file = csvFileInput.files[0];
+
+        if (!file) {
+            alert("Please select a CSV file.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("table_name", tableNameInput.value);
+
+        const response = await fetch("/upload_csv", {
+            method: "POST",
+            body: formData,
+        });
+
+        const result = await response.json();
+        if (result.status === "success") {
+            const messageDiv = document.getElementById("message");
+            messageDiv.textContent = result.message;
+
+            const sampleDataDiv = document.getElementById("sampleData");
+            const sampleData = JSON.parse(result.sample_data);
+            const table = createTableFromData(sampleData);
+            sampleDataDiv.innerHTML = "";
+            sampleDataDiv.appendChild(table);
+        } else if (result.status === "exists") {
+            const messageDiv = document.getElementById("message");
+            messageDiv.textContent = result.message;
+        }
+    });
+
+    const clearButton = document.getElementById("clearButton");
+    clearButton.addEventListener("click", () => {
+        const messageDiv = document.getElementById("message");
+        const sampleDataDiv = document.getElementById("sampleData");
+        messageDiv.textContent = "";
+        sampleDataDiv.textContent = "";
+    });
+});
+
+function createTableFromData(data) {
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const tbody = document.createElement("tbody");
+
+    const headerRow = document.createElement("tr");
+    Object.keys(data[0]).forEach((key) => {
+        const th = document.createElement("th");
+        th.textContent = key;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    data.forEach((row) => {
+
+        const tr = document.createElement("tr");
+        Object.values(row).forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    return table;
+}
+```
+
+tables.js:
+```
+document.addEventListener("DOMContentLoaded", () => {
+    const tableListContainer = document.getElementById("tableList");
+    fetchTables(tableListContainer);
+});
+
+async function fetchTables(container) {
+    //Clear the container before adding a new table
+    container.innerHTML = "";
+
+    const response = await fetch("/tables");
+    const result = await response.json();
+    const tableNames = result.tables;
+
+    const table = createTableFromTableNames(tableNames);
+    container.appendChild(table);
+}
+
+function createTableFromTableNames(tableNames) {
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const tbody = document.createElement("tbody");
+
+    const headerRow = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = "Table Name";
+    headerRow.appendChild(th);
+    thead.appendChild(headerRow);
+
+    tableNames.forEach((tableName) => {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.textContent = tableName;
+        tr.appendChild(td);
+
+        // Create a delete button for each table.
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", async () => {
+            if (confirm(`Are you sure you want to delete ${tableName}?`)) {
+                await deleteTable(tableName);
+                fetchTables(document.getElementById("tableList"));
+            }
+        });
+
+        // Add the delete button to the row.
+        const buttonTd = document.createElement("td");
+        buttonTd.appendChild(deleteButton);
+        tr.appendChild(buttonTd);
+
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    return table;
+}
+
+async function deleteTable(tableName) {
+    const response = await fetch(`/delete_table?table_name=${tableName}`, {
+        method: "DELETE",
+    });
+
+    const result = await response.json();
+    if (result.status !== "success") {
+        alert("An error occurred while deleting the table.");
+    }
+}
+```
+
+styles.css:
+```
+body {
+    font-family: Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f8f8;
+}
+
+
+.container {
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+table {
+    border-collapse: collapse;
+    margin: 20px auto; 
+}
+
+form {
+    margin: 20px;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#message {
+    text-align: center;
+}
+```

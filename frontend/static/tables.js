@@ -61,7 +61,7 @@ async function deleteTable(tableName) {
     });
 
     const result = await response.json();
-    if (result.status !== "success") {
+    if (result.status === "error") {
         alert("An error occurred while deleting the table.");
-    }
+    }    
 }

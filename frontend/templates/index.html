@@ -1,12 +1,15 @@
+{% from flask import url_for %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sequel</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <script src="/static/upload.js" defer></script>
-    <script src="/static/tables.js" defer></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="{{ url_for('static', filename='upload.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='tables.js') }}" defer></script>
+
 </head>
 <body>
     <div class="container">

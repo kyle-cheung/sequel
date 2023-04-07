@@ -18,3 +18,15 @@ The first build you should attempt should be able to do these things:
 3.  Have a button that says upload, where we then upload the chosen file to the SQLite database with the specified name from step2
 4. Once the upload is successful, below the upload button it will display a message "You have successfully uploaded your CSV as <table_name>" 
 5. Display the first 5 rows of the new table along with its headers below the message in step 4
+
+sequel/
+|-- backend/
+|   |-- app.py
+|   |-- database.py
+|-- frontend/
+|   |-- templates/
+|   |   |-- index.html
+|   |-- static/
+|   |   |-- styles.css
+|   |   |-- upload.js
+|   |   |-- tables.js
