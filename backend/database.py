@@ -22,6 +22,15 @@ def get_tables():
 def delete_table(table_name):
     with sqlite3.connect(DATABASE_FILE) as conn:
         cursor = conn.cursor()
-        cursor.execute("DROP TABLE IF EXISTS ?;", (table_name,))
-    return "success"
+
+        # Check if the table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        result = cursor.fetchone()
+
+        if result:
+            # If the table exists, delete it
+            cursor.execute(f"DROP TABLE {table_name}")
+            return "success"
+        else:
+            return "not found"
 
