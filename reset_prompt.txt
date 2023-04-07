@@ -1,4 +1,4 @@
-Everything is working as expected. This time around, we made a great team! Let me refresh your memory with our goal, the current project directory, and our code>
+Let me refresh your memory with our goal, the current project directory, and our code:
 Goal:
 At a high level my goal is: create a tool that accepts text input to query a database.
 This can be achieved by a few milestones
@@ -13,6 +13,7 @@ sequel/
 |-- backend/
 |   |-- app.py
 |   |-- database.py
+|   |-- query.py
 |-- frontend/
 |   |-- templates/
 |   |   |-- index.html
@@ -28,6 +29,7 @@ from flask import Flask, request, jsonify, render_template
 import os
 import database
 import re
+import query
 
 static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static'))
 
@@ -66,10 +68,14 @@ def delete_table():
     else:
         return jsonify({"status": "error", "message": "No table name provided"})
 
+@app.route("/store_user_query", methods=["POST"])
+def store_user_query():
+    user_query = request.form["user_query"]
+    query.store_user_query(user_query)
+    return jsonify({"status": "success", "message": "User query stored successfully"})
 
 if __name__ == "__main__":
     app.run(debug=True)
-
 ```
 
 database.py:
@@ -102,6 +108,13 @@ def delete_table(table_name):
     return "success"
 ```
 
+query.py:
+```
+def store_user_query(query):
+    # You can store and process the user query here
+    pass
+```
+
 index.html:
 ```
 <!DOCTYPE html>
@@ -132,9 +145,15 @@ index.html:
         <div id="sampleData"></div>
         <div id="tableList"></div>
     </div>
+
+    <div class="query-history" id="queryHistory"></div>
+
+    <div class="query-container">
+        <input type="text" id="userQuery" placeholder="Enter your query">
+        <button id="sendButton">Send</button>
+    </div>
 </body>
 </html>
-
 ```
 
 upload.js
@@ -190,7 +209,48 @@ document.addEventListener("DOMContentLoaded", async () => {
         messageDiv.textContent = "";
         sampleDataDiv.textContent = "";
     });
+
+    // Listen for query send button
+    const sendButton = document.getElementById("sendButton");
+    sendButton.addEventListener("click", async () => {
+        const userQueryInput = document.getElementById("userQuery");
+        const userQuery = userQueryInput.value;
+
+        const response = await fetch("/store_user_query", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `user_query=${encodeURIComponent(userQuery)}`,
+        });
+
+        const result = await response.json();
+        if (result.status === "success") {
+            // Handle the response here (e.g., show a message or clear the input)
+            //Clear the input
+            userQueryInput.value = "";
+            updateQueryHistory(userQuery);
+        } else {
+            // Handle the error here (e.g., show an error message)
+        }
+    });
+
+    // Add this code to capture the "Enter" key press in the userQuery input
+    document.getElementById("userQuery").addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendButton.click();
+        }
+    });
+
 });
+
+function updateQueryHistory(query) {
+    const queryHistoryDiv = document.getElementById("queryHistory");
+    const queryElement = document.createElement("p");
+    queryElement.textContent = query;
+    queryHistoryDiv.prepend(queryElement);
+}
 
 function createTableFromData(data) {
     const table = document.createElement("table");
@@ -301,7 +361,6 @@ body {
     background-color: #f8f8f8;
 }
 
-
 .container {
     width: 80%;
     display: flex;
@@ -323,14 +382,77 @@ form {
     margin: 20px;
 }
 
-.content {
+.uploadContent {
+    position: fixed;
+    top: 50px;
+    width: 80%;
+    left: 50%;
+    height:100px;
+    transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
+    z-index: 10;
+}
+
+#tableList {
+    position: fixed;
+    font-family: Helvetica, sans-serif;
+    top: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 80%;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 #message {
     text-align: center;
+    margin-top: 100px;
+}
+
+.query-container {
+    position: fixed;
+    bottom: 0;
+    left: 200px;
+    right: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 -2px 5px, rgba(0, 0, 0, 0.1);
+}
+
+#userQuery {
+    width: 100%;
+    height: 40px;
+    padding: 5px;
+    font-size: 18px;
+}
+
+#sendButton {
+    height: 40px;
+    margin-left: 10px;
+    font-size: 18px;
+}
+
+.query-history {
+    position: fixed;
+    bottom: 90px;
+    left: 200px;
+    right: 200px;
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    overflow-y: scroll;
+    max-height: 200px;
 }
 ```
+
+Let's try and get milestone 2. What we need to accomplish now is:
+1.  Add a text input at the very bottom of the webpage, this text input container should be fixed. To the right of this text input should be a button that says send. This send button can also be triggered if the user pushes enter while in the text box
+2. The text input should be stored in the backend into a variable called user_query. I think this should be in a new python file called query.py, what do you think?
