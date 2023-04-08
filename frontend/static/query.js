@@ -3,6 +3,10 @@ const sendButton = document.getElementById("sendButton");
 sendButton.addEventListener("click", async () => {
     const userQueryInput = document.getElementById("userQuery");
     const userQuery = userQueryInput.value;
+    
+    //Determine which model to use
+    const dropdown = document.getElementById("apiDropdown");
+    const selectedModel = dropdown.value;
 
     //Clear the input
     userQueryInput.value = "";
@@ -14,7 +18,7 @@ sendButton.addEventListener("click", async () => {
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: `user_query=${encodeURIComponent(userQuery)}`,
+        body: `user_query=${encodeURIComponent(userQuery)}&selected_model=${encodeURIComponent(selectedModel)}`,
     });
     
     const result = await response.json();

@@ -23,6 +23,7 @@
                 </div>
         </div>
         <div id="tableList"></div>
+        
         <div id="message"></div>
         <div id="sampleData"></div>
         
@@ -31,6 +32,10 @@
     <div class="query-history" id="queryHistory"></div>
 
     <div class="query-container">
+        <select id="apiDropdown">
+            <option value="gpt3.5">GPT 3.5</option>
+            <option value="textcortex">TextCortex</option>
+        </select>
         <input type="text" id="userQuery" placeholder="Enter your query">
         <button id="sendButton">Send</button>
     </div>

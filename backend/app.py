@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify, render_template, json
 import os
 import database
 import re
-import query
+import query_textcortex
+import query_openai
 
 static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static'))
 
@@ -44,7 +45,13 @@ def delete_table():
 @app.route("/store_user_query", methods=["POST"])
 def store_user_query():
     user_query = request.form["user_query"]
-    query_response = query.store_user_query(user_query)
+    selected_model = request.form["selected_model"]
+    query_reponse = None
+    if selected_model == "gpt3.5":
+        query_response = query_openai.store_user_query(user_query)
+    elif selected_model == "textcortex":
+        query_response = query_textcortex.store_user_query(user_query)
+        
     query_response["sql_results"] = json.dumps(query_response["sql_results"])
     return jsonify({"status": query_response["status"], "message": query_response})
 

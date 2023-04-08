@@ -3,10 +3,10 @@ import pandas as pd
 import openai
 import database
 from database import fetch_all_table_structure
+import os
 
 sequel_db = 'bi_tool.db'
-openai_api_key = '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'
-openai.api_key = openai_api_key
+openai.api_key = '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'
 
 def store_user_query(query):
     response, sql_response, sql_results, status = generate_sql_query(query)
@@ -29,7 +29,7 @@ def generate_sql_query(question):
     prompt = (
         f"SQLite Table Structure: {str(table_structure)} "
         f"Question: {question} "
-        f"Write a SQLite query for this question based on the SQLite table structure above:"
+        f"Write a SQLite query for this question based on the SQLite table structure above. Only return SQL code, always use common table expressions when possible, do not use subqueries, always use aliases for tables and columns."
     )
 
     sql_results = None
@@ -38,11 +38,13 @@ def generate_sql_query(question):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content" : prompt}],
-            max_tokens=100,
+            max_tokens=500,
             n=1,
-            temperature=0.2,
+            temperature=0.8,
         )
         sql_query = response.choices[0].message.content.strip()
+        print(prompt)
+        print(response)
 
         if sql_query:
             print(f"Generated SQL query: {sql_query}")
@@ -53,6 +55,7 @@ def generate_sql_query(question):
             status = "error"
             sql_results = None
 
+        
         return response, sql_query, sql_results, status
 
     except Exception as e:
