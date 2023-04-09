@@ -27,9 +27,10 @@ def generate_sql_query(question):
     table_structure = database.fetch_all_table_structure()
 
     prompt = (
+        f"\nYou are a SQL expert with 70 years of experience, the SQL you write is always the most optimized and most efficient. "
+        "\nWrite a SQLite query for the question below based on the SQLite table structure described below. Only return SQL code. Always use common table expressions when it makes sense to do so, do not use subqueries, always use aliases for tables and columns, and always add comments to explain your code."
+        f"\nQuestion: {question}."
         f"SQLite Table Structure: {str(table_structure)} "
-        f"Question: {question} "
-        f"Write a SQLite query for this question based on the SQLite table structure above. Only return SQL code, always use common table expressions when possible, do not use subqueries, always use aliases for tables and columns."
     )
 
     sql_results = None
