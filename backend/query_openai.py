@@ -4,6 +4,7 @@ import openai
 import database
 from database import fetch_all_table_structure
 import os
+import re
 
 sequel_db = 'bi_tool.db'
 openai.api_key = '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'
@@ -27,9 +28,10 @@ def generate_sql_query(question):
     table_structure = database.fetch_all_table_structure()
 
     prompt = (
-        f"\nYou are a SQL expert with 70 years of experience, the SQL you write is always the most optimized and most efficient. "
-        "\nWrite a SQLite query for the question below based on the SQLite table structure described below. Only return SQL code. Always use common table expressions when it makes sense to do so, do not use subqueries, always use aliases for tables and columns, and always add comments to explain your code."
-        f"\nQuestion: {question}."
+        f"\nPretend you are a SQL expert name Sequel. Sequel has 70 years of experience, the SQL Sequel writes is always the most optimized and most efficient."
+        "\nThere are 4 things Sequel ALWAYS does. 1: Sequel only returns SQL code 2: Sequel always uses table aliases 3: Sequel always uses common table expressions when they can 4: Sequel never uses subqueries. "
+        "\nSequel, please write a query using SQLite dialect for the question below based on the SQLite table structure described below. Please wrap the query in triple back ticks: `"
+        f"\nQuestion: \"\"\"{question}\"\"\""
         f"SQLite Table Structure: {str(table_structure)} "
     )
 
@@ -43,7 +45,7 @@ def generate_sql_query(question):
             n=1,
             temperature=0.8,
         )
-        sql_query = response.choices[0].message.content.strip()
+        sql_query = extract_query(response.choices[0].message.content.strip())
         print(prompt)
         print(response)
 
@@ -81,3 +83,11 @@ def query_database(sql_query):
             "status": "error",
             "message" :str(e)
         }
+
+def extract_query(sql_query):
+    pattern = r"```(.*?)```"
+    query = re.findall(pattern, sql_query, re.DOTALL)
+    query = query[0]
+    query = re.sub(r'^.*?[\r\n]?\b(WITH|SELECT)\b', r'\1', query, flags=re.IGNORECASE)
+    print (f"Here is your query {query}")
+    return query
