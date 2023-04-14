@@ -86,17 +86,54 @@ function createResultsTable(results) {
     return resultsTable;
 }
 
+function createSqlQueryToggle(queryElement) {
+    // Create a container for the toggle button and SQL Query label
+    const toggleContainer = document.createElement("span");
+    toggleContainer.classList.add("toggle-container");
+
+    // Create the SQL Query label and toggle button
+    const toggleButton = document.createElement("span");
+    toggleButton.textContent = "+";
+    toggleButton.classList.add("toggle-button");
+    const sqlQueryLabel = document.createElement("span");
+    sqlQueryLabel.textContent = "SQL Query:";
+    sqlQueryLabel.classList.add("sql-query-label");
+
+    // Append the toggle button and SQL Query label to the container
+    toggleContainer.appendChild(toggleButton);
+    toggleContainer.appendChild(sqlQueryLabel);
+
+    // Add the click event listener to the container
+    toggleContainer.onclick = () => {
+        const codeBlock = queryElement.querySelector("pre");
+        if (codeBlock.style.display === "none") {
+            codeBlock.style.display = "block";
+            toggleButton.textContent = "-";
+        } else {
+            codeBlock.style.display = "none";
+            toggleButton.textContent = "+";
+        }
+    };
+
+    queryElement.appendChild(toggleContainer);
+}
+
+
 async function updateQueryHistory(query, sequel_response = false, results = null) {
     const queryElement = document.createElement("p");
     const separator = document.createElement("hr");
 
     if (sequel_response) {
         queryElement.classList.add("sequelResponse");
-        queryHistory.appendChild(separator);
 
         if (query) {
-            queryElement.classList.add("preserve-whitespace");
-            queryElement.appendChild(await createFormattedSqlElement(query));
+            createSqlQueryToggle(queryElement);
+
+            // Add the formatted SQL element and hide it by default
+            const formattedSqlElement = await createFormattedSqlElement(query);
+            formattedSqlElement.style.display = "none";
+            queryElement.appendChild(formattedSqlElement);
+
         }
     } else {
         queryElement.textContent = query;
@@ -104,16 +141,22 @@ async function updateQueryHistory(query, sequel_response = false, results = null
 
     queryHistory.appendChild(queryElement);
 
+
     if (results) {
         const resultsTable = createResultsTable(results);
         queryHistory.appendChild(resultsTable);
-        queryHistory.appendChild(separator);
 
         // Initialize DataTables for the created table
-        $(`#${resultsTable.id}`).DataTable();
+        $(`#${resultsTable.id}`).DataTable({
+            pageLength: 25,
+            lengthMenu: [ [10, 25, 50, -1], [10, 25, 50, "All"] ]
+        });
+        
     }
 
-    // Scroll to the bottom of the queryHistory container
+    
+    // Add a divider and scroll to the bottom of the queryHistory container
+    queryHistory.appendChild(separator);
     scrollToBottom(queryHistory);
 }
 
