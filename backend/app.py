@@ -45,8 +45,10 @@ def delete_table():
 @app.route("/store_user_query", methods=["POST"])
 def store_user_query():
     user_query = request.form["user_query"]
-    selected_model = request.form["selected_model"]
+    # selected_model = request.form["selected_model"]
+    selected_model = "gpt3.5"
     query_reponse = None
+
     if selected_model == "gpt3.5":
         query_response = query_openai.store_user_query(user_query)
     elif selected_model == "textcortex":
