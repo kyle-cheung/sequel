@@ -63,13 +63,47 @@ function updateQueryHistory(query, sequel_response = false, results = null) {
     // Scroll to the bottom of the queryHistory container
     scrollToBottom(queryHistory);
 
+    // if (results) {
+    //     const resultsTable = document.createElement("table");
+    //     const thead = document.createElement("thead");
+    //     const tbody = document.createElement("tbody");
+
+    //     // Create table header
+
+    //     const headerRow = document.createElement("tr");
+    //     Object.keys(results[0]).forEach((key) => {
+    //         const th = document.createElement("th");
+    //         th.textContent = key;
+    //         headerRow.appendChild(th);
+    //     });
+    //     thead.appendChild(headerRow);
+
+    //     // Create table body
+    //     results.forEach((row) => {
+    //         const tr = document.createElement("tr");
+    //         Object.values(row).forEach((value) => {
+    //             const td = document.createElement("td");
+    //             td.textContent = value;
+    //             tr.appendChild(td);
+    //         });
+    //         tbody.appendChild(tr);
+    //     });
+
+    //     resultsTable.appendChild(thead);
+    //     resultsTable.appendChild(tbody);
+    //     queryHistory.appendChild(resultsTable);
+    //     queryHistory.appendChild(separator);
+    // }
+
     if (results) {
+        // Create a unique ID for each table
+        const tableId = `resultsTable_${Date.now()}`;
+        
         const resultsTable = document.createElement("table");
+        resultsTable.id = tableId; // Set the ID for the table
+        resultsTable.classList.add("display"); // Add the DataTables class
+
         const thead = document.createElement("thead");
-        const tbody = document.createElement("tbody");
-
-        // Create table header
-
         const headerRow = document.createElement("tr");
         Object.keys(results[0]).forEach((key) => {
             const th = document.createElement("th");
@@ -77,8 +111,10 @@ function updateQueryHistory(query, sequel_response = false, results = null) {
             headerRow.appendChild(th);
         });
         thead.appendChild(headerRow);
+        
+        resultsTable.appendChild(thead);
 
-        // Create table body
+        const tbody = document.createElement("tbody");
         results.forEach((row) => {
             const tr = document.createElement("tr");
             Object.values(row).forEach((value) => {
@@ -89,10 +125,12 @@ function updateQueryHistory(query, sequel_response = false, results = null) {
             tbody.appendChild(tr);
         });
 
-        resultsTable.appendChild(thead);
         resultsTable.appendChild(tbody);
         queryHistory.appendChild(resultsTable);
         queryHistory.appendChild(separator);
+        
+        // Initialize DataTables for the created table
+        $(`#${tableId}`).DataTable();
     }
 }
 
