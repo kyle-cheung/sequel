@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sequel</title>
+    
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css" crossorigin="anonymous">
+
     <script type="module" src="{{ url_for('static', filename='upload.js') }}" defer></script>
     <script type="module" src="{{ url_for('static', filename='tables.js') }}" defer></script>
     <script type="module" src="{{ url_for('static', filename='query.js') }}" defer></script>
@@ -17,10 +20,14 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.27.0/themes/prism.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.27.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.27.0/components/prism-sql.min.js"></script>
+
 </head>
 <body>
+    <h1>Sequel</h1> 
     <div class="container">
-        <h1>Sequel</h1> 
         <div class="uploadContent">
                 <div class="input-container">
                     <input type="file" id="csvFile">
@@ -42,11 +49,15 @@
 
     <div class="query-container">
         <select id="apiDropdown">
-            <!-- <option value="gpt3.5">GPT 3.5</option>
-            <option value="textcortex">TextCortex</option> -->
+            <option value="gpt3.5">GPT 3.5</option>
+            <option value="textcortex">TextCortex</option>
         </select>
         <input type="text" id="userQuery" placeholder="Enter your query">
-        <button id="sendButton">Send</button>
+
+        <button id="sendButton" class="icon-button">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+        
     </div>
 </body>
 </html>

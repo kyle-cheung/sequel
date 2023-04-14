@@ -25,7 +25,7 @@ sendButton.addEventListener("click", async () => {
     if (result.status === "success") {
         //Add response from app to query history
         const sqlResults = JSON.parse(result.message.sql_results);
-        updateQueryHistory(`SQL Query:\n ${result.message.sql_query}`, true, sqlResults);
+        updateQueryHistory(`${result.message.sql_query}`, true, sqlResults);
     } else {
         // Handle the error here (e.g., show an error message)
         updateQueryHistory("There was an error with your query", true)
@@ -43,57 +43,41 @@ document.getElementById("userQuery").addEventListener("keydown", (event) => {
 });
 
 
-function updateQueryHistory(query, sequel_response = false, results = null) {
+async function updateQueryHistory(query, sequel_response = false, results = null) {
     const queryHistory = document.getElementById("queryHistory");
     const queryElement = document.createElement("p");
     const separator = document.createElement("hr");
-    queryElement.textContent = query;
 
     if (sequel_response) {
         queryElement.classList.add("sequelResponse");
         const separator = document.createElement("hr");
         queryHistory.appendChild(separator);
 
-        if (query.startsWith("SQL Query:")) {
+        if (query) {
             queryElement.classList.add("preserve-whitespace");
+            // Wrap the SQL query in a <pre> and <code> element
+            const pre = document.createElement("pre");
+            const code = document.createElement("code");
+
+            // Use dynamic import() to load the SqlFormatter library
+            const SqlFormatterModule = await import("https://cdn.skypack.dev/sql-formatter@2.3.3");
+            const formattedQuery = SqlFormatterModule.default.format(query);
+
+            code.classList.add("language-sql"); // Add the Prism.js SQL language class
+            code.textContent = formattedQuery;
+            pre.appendChild(code);
+            queryElement.appendChild(pre);
+
+            // Add Prism.js syntax highlighting
+            Prism.highlightElement(code);
         }
+    } else {
+        queryElement.textContent = query;
     }
 
     queryHistory.appendChild(queryElement);
     // Scroll to the bottom of the queryHistory container
     scrollToBottom(queryHistory);
-
-    // if (results) {
-    //     const resultsTable = document.createElement("table");
-    //     const thead = document.createElement("thead");
-    //     const tbody = document.createElement("tbody");
-
-    //     // Create table header
-
-    //     const headerRow = document.createElement("tr");
-    //     Object.keys(results[0]).forEach((key) => {
-    //         const th = document.createElement("th");
-    //         th.textContent = key;
-    //         headerRow.appendChild(th);
-    //     });
-    //     thead.appendChild(headerRow);
-
-    //     // Create table body
-    //     results.forEach((row) => {
-    //         const tr = document.createElement("tr");
-    //         Object.values(row).forEach((value) => {
-    //             const td = document.createElement("td");
-    //             td.textContent = value;
-    //             tr.appendChild(td);
-    //         });
-    //         tbody.appendChild(tr);
-    //     });
-
-    //     resultsTable.appendChild(thead);
-    //     resultsTable.appendChild(tbody);
-    //     queryHistory.appendChild(resultsTable);
-    //     queryHistory.appendChild(separator);
-    // }
 
     if (results) {
         // Create a unique ID for each table
