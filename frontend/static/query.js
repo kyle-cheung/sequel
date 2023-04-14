@@ -25,7 +25,7 @@ sendButton.addEventListener("click", async () => {
     if (result.status === "success") {
         //Add response from app to query history
         const sqlResults = JSON.parse(result.message.sql_results);
-        updateQueryHistory(`SQL Query: ${result.message.sql_query}`, true, sqlResults);
+        updateQueryHistory(`SQL Query:\n ${result.message.sql_query}`, true, sqlResults);
     } else {
         // Handle the error here (e.g., show an error message)
         updateQueryHistory("There was an error with your query", true)
@@ -53,6 +53,10 @@ function updateQueryHistory(query, sequel_response = false, results = null) {
         queryElement.classList.add("sequelResponse");
         const separator = document.createElement("hr");
         queryHistory.appendChild(separator);
+
+        if (query.startsWith("SQL Query:")) {
+            queryElement.classList.add("preserve-whitespace");
+        }
     }
 
     queryHistory.appendChild(queryElement);
