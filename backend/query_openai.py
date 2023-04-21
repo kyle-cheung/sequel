@@ -3,11 +3,13 @@ import pandas as pd
 import openai
 import database
 from database import fetch_all_table_structure
+from dotenv import load_dotenv
 import os
 import re
 
 sequel_db = 'bi_tool.db'
-openai.api_key = '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'
+load_dotenv()  # Load environment variables from .env file
+openai.api_key = os.environ['OPENAI_API_KEY']
 
 def store_user_query(query):
     response, sql_response, sql_results, status = generate_sql_query(query)
