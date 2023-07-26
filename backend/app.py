@@ -4,10 +4,12 @@ import database
 import re
 import query_textcortex
 import query_openai
+import query_langchain
 
 static_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static'))
 
 app = Flask(__name__, template_folder='../frontend/templates', static_url_path='/static', static_folder=static_path)
+gpt = query_langchain.init_conversation_chain()
 
 @app.route("/", methods=["GET"])
 def index():
@@ -46,14 +48,19 @@ def delete_table():
 def store_user_query():
     user_query = request.form["user_query"]
     # selected_model = request.form["selected_model"]
-    selected_model = "gpt3.5"
+    selected_model = "gpt4"
     query_reponse = None
 
     if selected_model == "gpt3.5":
         query_response = query_openai.store_user_query(user_query)
     elif selected_model == "textcortex":
         query_response = query_textcortex.store_user_query(user_query)
+    elif selected_model == "gpt4":
+        gpt_response = gpt.predict(input=user_query)
+        query_response = query_langchain.construct_response(gpt_response)
+
         
+    print (query_response)
     query_response["sql_results"] = json.dumps(query_response["sql_results"])
     return jsonify({"status": query_response["status"], "message": query_response})
 

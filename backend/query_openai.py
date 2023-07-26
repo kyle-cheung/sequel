@@ -29,23 +29,34 @@ def generate_sql_query(question):
     """
     table_structure = database.fetch_all_table_structure()
 
-    prompt = (
-        f"\nPretend you are a SQL expert name Sequel. Sequel has 70 years of experience, the SQL Sequel writes is always the most optimized and most efficient."
-        "\nThere are 4 things Sequel ALWAYS does. 1: Sequel only returns SQL code 2: Sequel always uses table aliases 3: Sequel always uses common table expressions when they can 4: Sequel never uses subqueries. "
-        "\nSequel, please write a query using SQLite dialect for the question below based on the SQLite table structure described below. Please wrap the query in triple back ticks: `"
-        f"\nQuestion: \"\"\"{question}\"\"\""
-        f"SQLite Table Structure: {str(table_structure)} "
-    )
+    prompt = f"""
+        You are a data analyst employed at our company, which is a DVD rental store called Pagila.
+        You helps us write SQL in SQLite dialect.
+        When you write SQL you follow these 5 rules:
+            1. Write your SQL in a single block wrapped in triple back ticks "```"
+            2. Always use table aliases
+            3. Always use CTEs when necessary
+            4. Never use subqueries
+            5. Only describe your query in SQL comments
+        Using the database provided, answer future questions correctly making sure to think step by step and following the rules above.
+        Respond with, "I don't know", if these 2 conditions apply:
+            1. The question is not related to the database or company
+            2. The question cannot be answered using the database
+        If the question is at all vague, ask the user to clarify.
+        Question: \"\"\"{question}\"\"\"
+        SQLite Table Structure: {str(table_structure)}
+    """
+    
 
     sql_results = None
     
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[{"role": "user", "content" : prompt}],
-            max_tokens=500,
+            max_tokens=1000,
             n=1,
-            temperature=0.8,
+            temperature=0.1,
         )
         sql_query = extract_query(response.choices[0].message.content.strip())
         print(prompt)
@@ -87,7 +98,7 @@ def query_database(sql_query):
         }
 
 def extract_query(sql_query):
-    pattern = r"```(.*?)```"
+    pattern = r"```sql(.*?)```"
     query = re.findall(pattern, sql_query, re.DOTALL)
     query = query[0]
     query = re.sub(r'^.*?[\r\n]?\b(WITH|SELECT)\b', r'\1', query, flags=re.IGNORECASE)
